@@ -1,0 +1,110 @@
+[
+  {
+    "id": "beige_belted_coat",
+    "name": "Beige Belted Coat",
+    "price": 45.0,
+    "file": "beige_belted_coat.png",
+    "category": "upper",
+    "collection": "cottagecore",
+    "tags": [
+      "upper",
+      "cottagecore"
+    ]
+  },
+  {
+    "id": "cream_lace_blouse",
+    "name": "Cream Lace Blouse",
+    "price": 45.0,
+    "file": "cream_lace_blouse.png",
+    "category": "upper",
+    "collection": "cottagecore",
+    "tags": [
+      "upper",
+      "cottagecore"
+    ]
+  },
+  {
+    "id": "grey_hoodie",
+    "name": "Grey Hoodie",
+    "price": 45.0,
+    "file": "grey_hoodie.png",
+    "category": "upper",
+    "collection": "cottagecore",
+    "tags": [
+      "upper",
+      "cottagecore"
+    ]
+  },
+  {
+    "id": "ivory_silk_blouse",
+    "name": "Ivory Silk Blouse",
+    "price": 45.0,
+    "file": "ivory_silk_blouse.png",
+    "category": "upper",
+    "collection": "cottagecore",
+    "tags": [
+      "upper",
+      "cottagecore"
+    ]
+  },
+  {
+    "id": "peach_bow_blouse",
+    "name": "Peach Bow Blouse",
+    "price": 45.0,
+    "file": "peach_bow_blouse.png",
+    "category": "upper",
+    "collection": "cottagecore",
+    "tags": [
+      "upper",
+      "cottagecore"
+    ]
+  },
+  {
+    "id": "pink_vneck_top",
+    "name": "Pink Vneck Top",
+    "price": 45.0,
+    "file": "pink_vneck_top.png",
+    "category": "upper",
+    "collection": "cottagecore",
+    "tags": [
+      "upper",
+      "cottagecore"
+    ]
+  },
+  {
+    "id": "red_racerback_tank",
+    "name": "Red Racerback Tank",
+    "price": 45.0,
+    "file": "red_racerback_tank.png",
+    "category": "upper",
+    "collection": "cottagecore",
+    "tags": [
+      "upper",
+      "cottagecore"
+    ]
+  },
+  {
+    "id": "striped_lace_shirt",
+    "name": "Striped Lace Shirt",
+    "price": 45.0,
+    "file": "striped_lace_shirt.png",
+    "category": "upper",
+    "collection": "cottagecore",
+    "tags": [
+      "upper",
+      "cottagecore"
+    ]
+  },
+  {
+    "id": "white_crew_tee",
+    "name": "White Crew Tee",
+    "price": 45.0,
+    "file": "white_crew_tee.png",
+    "category": "upper",
+    "collection": "cottagecore",
+    "tags": [
+      "upper",
+      "cottagecore"
+    ]
+  }
+]

@@ -1,0 +1,36 @@
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Agent skills & internal configurations
+.agents/
+
+# Project logs & internal implementation plans
+logs.md
+logs*.md
+*plan*.md
+*PLAN*.md
+VTON_IMPLEMENTATION_PLAN.md
+correction.md
+
+# Test output artifacts
+test_*.jpg
+test_*.png
+test_output.jpg
+test_person.jpg
+
+# Node / Frontend (for upcoming frontend work)
+node_modules/
+.next/
+dist/
+build/
+.env
+.env.local
