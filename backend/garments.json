@@ -2,109 +2,226 @@
   {
     "id": "beige_belted_coat",
     "name": "Beige Belted Coat",
-    "price": 45.0,
+    "price": 89.99,
     "file": "beige_belted_coat.png",
-    "category": "upper",
+    "category": "outerwear",
     "collection": "cottagecore",
-    "tags": [
-      "upper",
-      "cottagecore"
-    ]
+    "tags": ["outerwear", "coat", "winter"],
+    "anchors": {
+      "ls": [0.20, 0.04],
+      "rs": [0.80, 0.04],
+      "lh": [0.15, 0.96],
+      "rh": [0.85, 0.96]
+    },
+    "anchors8": {
+      "ls": [0.20, 0.04],
+      "rs": [0.80, 0.04],
+      "neck": [0.50, 0.02],
+      "waist_l": [0.22, 0.50],
+      "waist_r": [0.78, 0.50],
+      "lh": [0.15, 0.96],
+      "rh": [0.85, 0.96],
+      "hem_mid": [0.50, 0.96]
+    }
   },
   {
     "id": "cream_lace_blouse",
     "name": "Cream Lace Blouse",
-    "price": 45.0,
+    "price": 49.99,
     "file": "cream_lace_blouse.png",
     "category": "upper",
     "collection": "cottagecore",
-    "tags": [
-      "upper",
-      "cottagecore"
-    ]
+    "tags": ["upper", "blouse", "vintage"],
+    "anchors": {
+      "ls": [0.22, 0.05],
+      "rs": [0.78, 0.05],
+      "lh": [0.20, 0.97],
+      "rh": [0.80, 0.97]
+    },
+    "anchors8": {
+      "ls": [0.22, 0.05],
+      "rs": [0.78, 0.05],
+      "neck": [0.50, 0.03],
+      "waist_l": [0.21, 0.52],
+      "waist_r": [0.79, 0.52],
+      "lh": [0.20, 0.97],
+      "rh": [0.80, 0.97],
+      "hem_mid": [0.50, 0.97]
+    }
   },
   {
     "id": "grey_hoodie",
-    "name": "Grey Hoodie",
-    "price": 45.0,
+    "name": "Grey Oversized Hoodie",
+    "price": 59.99,
     "file": "grey_hoodie.png",
     "category": "upper",
-    "collection": "cottagecore",
-    "tags": [
-      "upper",
-      "cottagecore"
-    ]
+    "collection": "casual",
+    "tags": ["upper", "hoodie", "streetwear"],
+    "anchors": {
+      "ls": [0.22, 0.06],
+      "rs": [0.78, 0.06],
+      "lh": [0.20, 0.97],
+      "rh": [0.80, 0.97]
+    },
+    "anchors8": {
+      "ls": [0.22, 0.06],
+      "rs": [0.78, 0.06],
+      "neck": [0.50, 0.02],
+      "waist_l": [0.21, 0.50],
+      "waist_r": [0.79, 0.50],
+      "lh": [0.20, 0.97],
+      "rh": [0.80, 0.97],
+      "hem_mid": [0.50, 0.97]
+    }
   },
   {
     "id": "ivory_silk_blouse",
     "name": "Ivory Silk Blouse",
-    "price": 45.0,
+    "price": 54.99,
     "file": "ivory_silk_blouse.png",
     "category": "upper",
     "collection": "cottagecore",
-    "tags": [
-      "upper",
-      "cottagecore"
-    ]
+    "tags": ["upper", "silk", "elegant"],
+    "anchors": {
+      "ls": [0.22, 0.05],
+      "rs": [0.78, 0.05],
+      "lh": [0.20, 0.97],
+      "rh": [0.80, 0.97]
+    },
+    "anchors8": {
+      "ls": [0.22, 0.05],
+      "rs": [0.78, 0.05],
+      "neck": [0.50, 0.02],
+      "waist_l": [0.21, 0.50],
+      "waist_r": [0.79, 0.50],
+      "lh": [0.20, 0.97],
+      "rh": [0.80, 0.97],
+      "hem_mid": [0.50, 0.97]
+    }
   },
   {
     "id": "peach_bow_blouse",
     "name": "Peach Bow Blouse",
-    "price": 45.0,
+    "price": 49.99,
     "file": "peach_bow_blouse.png",
     "category": "upper",
     "collection": "cottagecore",
-    "tags": [
-      "upper",
-      "cottagecore"
-    ]
+    "tags": ["upper", "bow", "chic"],
+    "anchors": {
+      "ls": [0.22, 0.05],
+      "rs": [0.78, 0.05],
+      "lh": [0.20, 0.97],
+      "rh": [0.80, 0.97]
+    },
+    "anchors8": {
+      "ls": [0.22, 0.05],
+      "rs": [0.78, 0.05],
+      "neck": [0.50, 0.02],
+      "waist_l": [0.21, 0.50],
+      "waist_r": [0.79, 0.50],
+      "lh": [0.20, 0.97],
+      "rh": [0.80, 0.97],
+      "hem_mid": [0.50, 0.97]
+    }
   },
   {
     "id": "pink_vneck_top",
-    "name": "Pink Vneck Top",
-    "price": 45.0,
+    "name": "Pink V-Neck Top",
+    "price": 34.99,
     "file": "pink_vneck_top.png",
     "category": "upper",
-    "collection": "cottagecore",
-    "tags": [
-      "upper",
-      "cottagecore"
-    ]
+    "collection": "basics",
+    "tags": ["upper", "vneck", "summer"],
+    "anchors": {
+      "ls": [0.22, 0.05],
+      "rs": [0.78, 0.05],
+      "lh": [0.20, 0.97],
+      "rh": [0.80, 0.97]
+    },
+    "anchors8": {
+      "ls": [0.22, 0.05],
+      "rs": [0.78, 0.05],
+      "neck": [0.50, 0.03],
+      "waist_l": [0.21, 0.50],
+      "waist_r": [0.79, 0.50],
+      "lh": [0.20, 0.97],
+      "rh": [0.80, 0.97],
+      "hem_mid": [0.50, 0.97]
+    }
   },
   {
     "id": "red_racerback_tank",
     "name": "Red Racerback Tank",
-    "price": 45.0,
+    "price": 24.99,
     "file": "red_racerback_tank.png",
     "category": "upper",
-    "collection": "cottagecore",
-    "tags": [
-      "upper",
-      "cottagecore"
-    ]
+    "collection": "athletic",
+    "tags": ["upper", "tank", "activewear"],
+    "anchors": {
+      "ls": [0.25, 0.06],
+      "rs": [0.75, 0.06],
+      "lh": [0.20, 0.97],
+      "rh": [0.80, 0.97]
+    },
+    "anchors8": {
+      "ls": [0.25, 0.06],
+      "rs": [0.75, 0.06],
+      "neck": [0.50, 0.04],
+      "waist_l": [0.22, 0.50],
+      "waist_r": [0.78, 0.50],
+      "lh": [0.20, 0.97],
+      "rh": [0.80, 0.97],
+      "hem_mid": [0.50, 0.97]
+    }
   },
   {
     "id": "striped_lace_shirt",
     "name": "Striped Lace Shirt",
-    "price": 45.0,
+    "price": 44.99,
     "file": "striped_lace_shirt.png",
     "category": "upper",
     "collection": "cottagecore",
-    "tags": [
-      "upper",
-      "cottagecore"
-    ]
+    "tags": ["upper", "stripes", "casual"],
+    "anchors": {
+      "ls": [0.22, 0.05],
+      "rs": [0.78, 0.05],
+      "lh": [0.20, 0.97],
+      "rh": [0.80, 0.97]
+    },
+    "anchors8": {
+      "ls": [0.22, 0.05],
+      "rs": [0.78, 0.05],
+      "neck": [0.50, 0.02],
+      "waist_l": [0.21, 0.50],
+      "waist_r": [0.79, 0.50],
+      "lh": [0.20, 0.97],
+      "rh": [0.80, 0.97],
+      "hem_mid": [0.50, 0.97]
+    }
   },
   {
     "id": "white_crew_tee",
-    "name": "White Crew Tee",
-    "price": 45.0,
+    "name": "Classic White Crew Tee",
+    "price": 29.99,
     "file": "white_crew_tee.png",
     "category": "upper",
-    "collection": "cottagecore",
-    "tags": [
-      "upper",
-      "cottagecore"
-    ]
+    "collection": "basics",
+    "tags": ["upper", "tee", "essentials"],
+    "anchors": {
+      "ls": [0.20, 0.05],
+      "rs": [0.80, 0.05],
+      "lh": [0.18, 0.98],
+      "rh": [0.82, 0.98]
+    },
+    "anchors8": {
+      "ls": [0.20, 0.05],
+      "rs": [0.80, 0.05],
+      "neck": [0.50, 0.02],
+      "waist_l": [0.20, 0.50],
+      "waist_r": [0.80, 0.50],
+      "lh": [0.18, 0.98],
+      "rh": [0.82, 0.98],
+      "hem_mid": [0.50, 0.98]
+    }
   }
 ]

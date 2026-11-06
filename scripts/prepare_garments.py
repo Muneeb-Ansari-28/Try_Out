@@ -1,129 +1,98 @@
 """
 scripts/prepare_garments.py
 
-Batch-processes garment photos:
-1. Removes background using rembg (ISNet model tuned for clothing/objects).
-2. Trims transparent borders to normalize bounding box.
-3. Resizes to standard garment aspect ratio.
-4. Generates/updates backend/garments.json catalog.
+Batch-processes raw garment photos:
+1. Removes background using rembg (isnet-general-use [PATCH P7]).
+2. Crops tightly to the visible alpha bounding box [FIX C5].
+3. Constrains thumbnail dimensions to 1024x1024.
+4. Generates/updates backend/garments.json preserving custom anchors and metadata [FIX C3, C5].
 """
 
-from __future__ import annotations
-
 import json
-import logging
 from pathlib import Path
-import sys
-
+import re
 from PIL import Image
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("PrepareGarments")
+ROOT = Path(__file__).resolve().parent.parent
+raw_dir = ROOT / "garments" / "raw"
+out_dir = ROOT / "garments" / "processed"
+catalog_path = ROOT / "backend" / "garments.json"
 
+out_dir.mkdir(parents=True, exist_ok=True)
+catalog_path.parent.mkdir(parents=True, exist_ok=True)
 
-def process_garments(
-    raw_dir: str | Path = "garments/raw",
-    processed_dir: str | Path = "garments/processed",
-    catalog_path: str | Path = "backend/garments.json",
-    model_name: str = "u2netp",
-) -> None:
-    raw_path = Path(raw_dir)
-    proc_path = Path(processed_dir)
-    cat_path = Path(catalog_path)
-
-    proc_path.mkdir(parents=True, exist_ok=True)
-    cat_path.parent.mkdir(parents=True, exist_ok=True)
-
+# Preserve existing entries so custom pricing and manual anchors aren't overwritten [FIX C3, C5]
+existing = {}
+if catalog_path.exists():
     try:
-        from rembg import remove, new_session
-        session = new_session(model_name=model_name)
-        logger.info(f"rembg '{model_name}' session initialized successfully.")
+        existing = {g["id"]: g for g in json.loads(catalog_path.read_text(encoding="utf-8"))}
     except Exception as e:
-        logger.warning(f"rembg session failed with {model_name}: {e}. Retrying default...")
-        try:
-            from rembg import remove, new_session
-            session = new_session()
-        except Exception:
-            session = None
+        print(f"⚠️ Warning loading existing catalog: {e}")
 
-    valid_extensions = {".jpg", ".jpeg", ".png", ".webp"}
-    raw_files = [f for f in sorted(raw_path.glob("*")) if f.suffix.lower() in valid_extensions]
+# [PATCH P7] Prefer isnet-general-use for crisp lace/strap edges; fallback to u2netp if needed
+session = None
+try:
+    from rembg import new_session, remove
+    session = new_session("isnet-general-use")
+    print("✅ rembg session initialized with 'isnet-general-use'")
+except Exception as e:
+    print(f"⚠️ Could not load isnet-general-use ({e}), falling back to u2netp...")
+    try:
+        from rembg import new_session, remove
+        session = new_session("u2netp")
+    except Exception:
+        session = None
+
+
+def slug(s: str) -> str:
+    """Generate stable ID from filename stem."""
+    return re.sub(r"[^a-z0-9_]+", "_", s.lower()).strip("_")
+
+
+def prepare_all():
+    valid_exts = {".jpg", ".jpeg", ".png", ".webp"}
+    raw_files = [f for f in sorted(raw_dir.iterdir()) if f.suffix.lower() in valid_exts]
 
     if not raw_files:
-        logger.info(f"No raw files found in {raw_path}. Checking existing processed garments...")
+        print(f"ℹ️ No raw images found in {raw_dir}")
+        return
 
-    catalog = []
-    # If catalog exists, load it to preserve custom names/prices
-    existing_meta = {}
-    if cat_path.exists():
+    for img_path in raw_files:
+        gid = slug(img_path.stem)
+        print(f"Processing {img_path.name} → {gid}")
+
         try:
-            with open(cat_path, "r", encoding="utf-8") as f:
-                for item in json.load(f):
-                    existing_meta[item.get("id")] = item
-        except Exception as e:
-            logger.warning(f"Could not read existing catalog: {e}")
+            im = Image.open(img_path).convert("RGB")
+            if session:
+                cut = remove(im, session=session)
+            else:
+                cut = im.convert("RGBA")
 
-    # Process each raw image
-    for idx, img_path in enumerate(raw_files, start=1):
-        out_name = f"{img_path.stem}.png"
-        out_path = proc_path / out_name
-
-        logger.info(f"Processing raw garment: {img_path.name} -> {out_name}")
-
-        with open(img_path, "rb") as f:
-            raw_bytes = f.read()
-
-        if session:
-            try:
-                proc_bytes = remove(raw_bytes, session=session)
-                with open(out_path, "wb") as f:
-                    f.write(proc_bytes)
-            except Exception as e:
-                logger.error(f"Failed to remove background for {img_path.name}: {e}")
-                # Fallback: copy as-is if already PNG
+            # [FIX C5] Crop to visible garment alpha bounding box
+            alpha = cut.getchannel("A")
+            bbox = alpha.point(lambda a: 255 if a > 10 else 0).getbbox()
+            if bbox is None:
+                print("  ! background removal found nothing, skipping")
                 continue
-        else:
-            with open(out_path, "wb") as f:
-                f.write(raw_bytes)
 
-        # Post-process: crop tight bounding box around visible alpha
-        try:
-            with Image.open(out_path) as im:
-                if im.mode != "RGBA":
-                    im = im.convert("RGBA")
-                bbox = im.getbbox()
-                if bbox:
-                    im_cropped = im.crop(bbox)
-                    im_cropped.save(out_path, "PNG")
+            cut = cut.crop(bbox)
+            cut.thumbnail((1024, 1024))
+            cut.save(out_dir / f"{gid}.png")
+
+            existing.setdefault(gid, {
+                "id": gid,
+                "name": gid.replace("_", " ").title(),
+                "price": 49.99,
+                "file": f"{gid}.png",
+                "category": "upper",
+                "collection": "default",
+            })
         except Exception as e:
-            logger.warning(f"Bounding box crop skipped for {out_name}: {e}")
+            print(f"  ❌ Error processing {img_path.name}: {e}")
 
-    # Build catalog from all processed PNGs
-    for idx, p_file in enumerate(sorted(proc_path.glob("*.png")), start=1):
-        stem = p_file.stem
-        existing = existing_meta.get(stem, {})
-
-        pretty_name = existing.get("name", stem.replace("_", " ").replace("-", " ").title())
-        price = existing.get("price", 45.00)
-        category = existing.get("category", "upper")
-        collection = existing.get("collection", "cottagecore")
-
-        catalog.append({
-            "id": stem,
-            "name": pretty_name,
-            "price": price,
-            "file": p_file.name,
-            "category": category,
-            "collection": collection,
-            "tags": [category, collection],
-        })
-
-    with open(cat_path, "w", encoding="utf-8") as f:
-        json.dump(catalog, f, indent=2)
-
-    logger.info(f"Catalog updated: {len(catalog)} garments registered in {cat_path}")
+    catalog_path.write_text(json.dumps(list(existing.values()), indent=2), encoding="utf-8")
+    print(f"\nDone: {len(existing)} garments registered in {catalog_path}")
 
 
 if __name__ == "__main__":
-    process_garments()
-
+    prepare_all()
