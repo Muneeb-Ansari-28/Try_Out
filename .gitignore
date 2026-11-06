@@ -26,6 +26,8 @@ test_*.jpg
 test_*.png
 test_output.jpg
 test_person.jpg
+backend/results/
+backend/temp/
 
 # Node / Frontend (for upcoming frontend work)
 node_modules/

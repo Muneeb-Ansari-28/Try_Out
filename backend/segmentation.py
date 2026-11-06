@@ -67,13 +67,13 @@ class BodySegmenter:
         if cat_mask is None:
             return np.zeros((h, w), dtype=np.uint8)
 
-        # Hair (1) + Face skin (3) always stay in front
+        # Hair (1) + Face skin (3) always stay in front (chin, neck, hair over collar)
         occ = np.isin(cat_mask, (1, 3)).astype(np.uint8) * 255
 
         # Forearms and hands: thick capsules between elbow and wrist
         arms = np.zeros((h, w), dtype=np.uint8)
         sh_width = float(np.linalg.norm(pts["rs"] - pts["ls"]))
-        thick = max(int(0.22 * sh_width), 8)
+        thick = max(int(0.18 * sh_width), 8)
 
         for el_key, wr_key in [("el_l", "wr_l"), ("el_r", "wr_r")]:
             if el_key in pts and wr_key in pts and pts[el_key] is not None and pts[wr_key] is not None:
@@ -81,7 +81,8 @@ class BodySegmenter:
                 p_wr = (int(pts[wr_key][0]), int(pts[wr_key][1]))
                 cv2.line(arms, p_el, p_wr, 255, thick)
 
-        # Only retain arm capsule where body exists (cat_mask != 0)
-        arms &= ((cat_mask != 0).astype(np.uint8) * 255)
+        # Only retain arm capsule where BARE SKIN (class 2) exists (hands/wrists crossing torso).
+        # Do NOT intersect with clothes (class 4), which would punch holes revealing old shirts.
+        arms &= ((cat_mask == 2).astype(np.uint8) * 255)
 
         return cv2.max(occ, arms)

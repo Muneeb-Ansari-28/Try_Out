@@ -32,6 +32,7 @@ GARMENT_DIR = ROOT / "garments" / "processed"
 CATALOG = ROOT / "backend" / "garments.json"
 
 sys.path.insert(0, str(ROOT / "backend"))
+import ai_tryon
 from camera import Camera
 from tryon_engine import TryOnEngine
 
@@ -113,6 +114,10 @@ if not GARMENT_DIR.exists():
     GARMENT_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/garments", StaticFiles(directory=GARMENT_DIR), name="garments")
 
+RESULTS_DIR = ROOT / "backend" / "results"
+RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/results", StaticFiles(directory=RESULTS_DIR), name="results")
+
 # ── Routes ────────────────────────────────────────────────────────────
 
 
@@ -166,6 +171,61 @@ async def clear_garment():
     if engine:
         engine.clear_garment()
     return {"status": "cleared"}
+
+
+class AITryOnRequest(BaseModel):
+    garment_id: str | None = None
+
+
+@app.post("/api/tryon-ai")
+async def trigger_ai_tryon(req: AITryOnRequest | None = None):
+    """
+    Trigger photorealistic AI Virtual Try-On using IDM-VTON.
+    Captures live camera frame, pairs with garment, and runs diffusion inpainting.
+    """
+    selected_id = (
+        req.garment_id if (req and req.garment_id)
+        else (engine.current_garment_id if engine else None)
+    )
+    if not selected_id:
+        raise HTTPException(400, "No garment selected for AI Try-On")
+
+    if _cam is None:
+        raise HTTPException(503, "Camera capture is not active")
+
+    frame = _cam.read()
+    if frame is None:
+        raise HTTPException(503, "Failed to capture current frame from camera")
+
+    # Flip to match the mirrored display view
+    frame = cv2.flip(frame, 1)
+
+    garment_name = selected_id.replace("_", " ").title()
+    if CATALOG.exists():
+        try:
+            items = json.loads(CATALOG.read_text(encoding="utf-8"))
+            for item in items:
+                if item.get("id") == selected_id:
+                    garment_name = item.get("name", garment_name)
+                    break
+        except (json.JSONDecodeError, OSError):
+            logger.warning("Could not read catalog for garment name resolution")
+
+    try:
+        job_id = ai_tryon.start_ai_tryon(frame, selected_id, garment_name)
+        return {"status": "ok", "job_id": job_id, "garment_name": garment_name}
+    except (FileNotFoundError, RuntimeError, ValueError) as exc:
+        logger.error(f"Failed to start AI try-on job: {exc}")
+        raise HTTPException(500, str(exc)) from exc
+
+
+@app.get("/api/tryon-ai/status/{job_id}")
+async def get_ai_tryon_status(job_id: str):
+    """Poll status and progress of an active AI Try-On job."""
+    job = ai_tryon.get_job_status(job_id)
+    if job is None:
+        raise HTTPException(404, f"Job '{job_id}' not found")
+    return job
 
 
 @app.get("/api/garments")
