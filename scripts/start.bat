@@ -44,3 +44,4 @@ start http://localhost:3000
 
 echo.
 echo Virtual Try-On is running! Close the terminal windows to stop.
+
