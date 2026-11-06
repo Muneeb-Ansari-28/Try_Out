@@ -12,9 +12,9 @@ from __future__ import annotations
 
 import argparse
 import logging
-from pathlib import Path
 import sys
 import time
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -23,7 +23,10 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "backend"))
 
-from tryon_engine import TryOnEngine
+try:
+    from backend.tryon_engine import TryOnEngine
+except ImportError:
+    from tryon_engine import TryOnEngine  # type: ignore[import-not-found]  # pyright: ignore[reportMissingImports]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("TestLocal")

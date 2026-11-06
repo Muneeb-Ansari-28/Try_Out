@@ -13,20 +13,21 @@ Unit tests for TryOnEngine conforming to VTON_IMPLEMENTATION_PLAN-2-FIXED.md:
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import sys
-import time
+from pathlib import Path
 
 import cv2
 import numpy as np
-import pytest
 
 # Ensure backend directory is in sys.path
 BACKEND_DIR = Path(__file__).resolve().parent.parent / "backend"
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from tryon_engine import TryOnEngine, OneEuro
+try:
+    from backend.tryon_engine import OneEuro, TryOnEngine
+except ImportError:
+    from tryon_engine import OneEuro, TryOnEngine  # type: ignore[import-not-found]  # pyright: ignore[reportMissingImports]
 
 
 class MockLandmark:

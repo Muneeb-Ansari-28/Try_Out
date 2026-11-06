@@ -9,8 +9,9 @@ Batch-processes raw garment photos:
 """
 
 import json
-from pathlib import Path
 import re
+from pathlib import Path
+
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -26,7 +27,7 @@ existing = {}
 if catalog_path.exists():
     try:
         existing = {g["id"]: g for g in json.loads(catalog_path.read_text(encoding="utf-8"))}
-    except Exception as e:
+    except (json.JSONDecodeError, OSError, KeyError) as e:
         print(f"⚠️ Warning loading existing catalog: {e}")
 
 # [PATCH P7] Prefer isnet-general-use for crisp lace/strap edges; fallback to u2netp if needed
@@ -35,12 +36,12 @@ try:
     from rembg import new_session, remove
     session = new_session("isnet-general-use")
     print("✅ rembg session initialized with 'isnet-general-use'")
-except Exception as e:
+except (ImportError, RuntimeError, OSError) as e:
     print(f"⚠️ Could not load isnet-general-use ({e}), falling back to u2netp...")
     try:
         from rembg import new_session, remove
         session = new_session("u2netp")
-    except Exception:
+    except (ImportError, RuntimeError, OSError):
         session = None
 
 
@@ -87,7 +88,7 @@ def prepare_all():
                 "category": "upper",
                 "collection": "default",
             })
-        except Exception as e:
+        except (OSError, ValueError) as e:
             print(f"  ❌ Error processing {img_path.name}: {e}")
 
     catalog_path.write_text(json.dumps(list(existing.values()), indent=2), encoding="utf-8")

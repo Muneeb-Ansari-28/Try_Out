@@ -13,25 +13,65 @@ Live virtual try-on engine using MediaPipe Pose + perspective warp.
 
 from __future__ import annotations
 
-import cv2
 import json
 import logging
 import math
-from pathlib import Path
 import threading
 import time
-from typing import Dict, Optional, Tuple
+from pathlib import Path
 
+import cv2
 import mediapipe as mp
 import numpy as np
 
-# Day 3 modules — lazy imports so Day 1 engine functions seamlessly before they exist
+# Day 3 & Day 6 modules — lazy imports
 try:
-    from realism import relight_and_soften
-    from segmentation import BodySegmenter
+    from realism import relight_and_soften  # type: ignore[import-not-found]  # pyright: ignore[reportMissingImports]
+    from segmentation import BodySegmenter  # type: ignore[import-not-found]  # pyright: ignore[reportMissingImports]
 except ImportError:
-    relight_and_soften = None
-    BodySegmenter = None
+    try:
+        from backend.realism import relight_and_soften  # type: ignore[import-not-found]  # pyright: ignore[reportMissingImports]
+        from backend.segmentation import BodySegmenter  # type: ignore[import-not-found]  # pyright: ignore[reportMissingImports]
+    except ImportError:
+        relight_and_soften = None
+        BodySegmenter = None
+
+try:
+    from tps_warper import compute_tps_anchors, tps_warp  # type: ignore[import-not-found]  # pyright: ignore[reportMissingImports]
+except ImportError:
+    try:
+        from backend.tps_warper import compute_tps_anchors, tps_warp  # type: ignore[import-not-found]  # pyright: ignore[reportMissingImports]
+    except ImportError:
+        compute_tps_anchors = None
+        tps_warp = None
+
+
+def widen_for_real_clothes(pts: dict, cat_mask: np.ndarray | None) -> dict:
+    """[PATCH P4] Expand shoulders/hips symmetrically so the virtual garment
+    covers the user's real clothes. No-op when no mask or clothes are narrower."""
+    if cat_mask is None:
+        return pts
+    y0 = int(min(pts["ls"][1], pts["rs"][1]))
+    y1 = int(max(pts["lh"][1], pts["rh"][1]))
+    if y0 < 0 or y1 <= y0 or y1 > cat_mask.shape[0]:
+        return pts
+    band = (cat_mask[y0:y1] == 4)
+    if not band.any():
+        return pts
+    xs = np.where(band.any(axis=0))[0]
+    real_w = float(xs.max() - xs.min())
+    shoulder_w = float(np.linalg.norm(pts["rs"] - pts["ls"]))
+    target_w = min(real_w, 1.35 * shoulder_w)
+    if target_w <= shoulder_w * 1.02:
+        return pts
+    extra = (target_w - shoulder_w) / 2
+    direction = (pts["rs"] - pts["ls"]) / (shoulder_w + 1e-6)
+    pts = dict(pts)
+    pts["ls"] = pts["ls"] - direction * extra
+    pts["rs"] = pts["rs"] + direction * extra
+    pts["lh"] = pts["lh"] - direction * extra * 0.5
+    pts["rh"] = pts["rh"] + direction * extra * 0.5
+    return pts
 
 log = logging.getLogger("TryOnEngine")
 
@@ -46,9 +86,9 @@ class OneEuro:
         self.mc = min_cutoff
         self.b = beta
         self.dc = d_cutoff
-        self.x: Optional[np.ndarray] = None
-        self.dx: Optional[np.ndarray] = None
-        self.t: Optional[float] = None
+        self.x: np.ndarray | None = None
+        self.dx: np.ndarray | None = None
+        self.t: float | None = None
 
     @staticmethod
     def _a(cutoff: float, dt: float) -> float:
@@ -96,10 +136,10 @@ class TryOnEngine:
         self.garment_dir = Path(garment_dir)
         self.catalog_path = Path(catalog_path) if catalog_path else self.garment_dir.parent.parent / "backend" / "garments.json"
 
-        self.garments: Dict[str, np.ndarray] = {}
-        self.garment_anchors: Dict[str, dict] = {}  # [FIX C5] per-garment 4-point anchors
-        self.garment_anchors8: Dict[str, dict] = {}  # [PATCH P3] per-garment 8-point anchors
-        self.current_garment_id: Optional[str] = None
+        self.garments: dict[str, np.ndarray] = {}
+        self.garment_anchors: dict[str, dict] = {}  # [FIX C5] per-garment 4-point anchors
+        self.garment_anchors8: dict[str, dict] = {}  # [PATCH P3] per-garment 8-point anchors
+        self.current_garment_id: str | None = None
         self._lock = threading.Lock()
 
         # [FIX C2] Backend state and deduplicated warning logging
@@ -109,11 +149,11 @@ class TryOnEngine:
 
         # [FIX H5] Temporal smoother
         self._smoother = OneEuro()
-        self._no_person_since: Optional[float] = None
+        self._no_person_since: float | None = None
 
         # [PATCH P2] Segmenter for occlusion & relighting (if available)
         self.segmenter = BodySegmenter() if BodySegmenter is not None else None
-        self._last_cat_mask: Optional[np.ndarray] = None
+        self._last_cat_mask: np.ndarray | None = None
         self._frame_count: int = 0
 
         # MediaPipe Pose (model_complexity=0 is Lite model for maximum real-time speed)
@@ -167,7 +207,7 @@ class TryOnEngine:
                             self.garment_anchors[gid] = g["anchors"]
                         if "anchors8" in g:
                             self.garment_anchors8[gid] = g["anchors8"]
-            except Exception as e:
+            except (json.JSONDecodeError, OSError, KeyError) as e:
                 self._warn_once("catalog", f"Failed to load catalog anchors: {e!r}")
 
     def set_garment(self, garment_id: str) -> bool:
@@ -186,12 +226,12 @@ class TryOnEngine:
             self._smoother.reset()
 
     @staticmethod
-    def _pair(a: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _pair(a: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """[FIX H1] Sort points by x-coordinate so left/right never swap after horizontal mirror flips."""
         return (a, b) if a[0] <= b[0] else (b, a)
 
     @staticmethod
-    def estimate_hips(ls: np.ndarray, rs: np.ndarray, torso_ratio: float = 1.3, hip_ratio: float = 0.85) -> Tuple[np.ndarray, np.ndarray]:
+    def estimate_hips(ls: np.ndarray, rs: np.ndarray, torso_ratio: float = 1.3, hip_ratio: float = 0.85) -> tuple[np.ndarray, np.ndarray]:
         """[FIX H2] Extrapolate hip positions from shoulder geometry when hips are occluded."""
         mid = (ls + rs) / 2.0
         sh_vec = rs - ls
@@ -203,7 +243,7 @@ class TryOnEngine:
         half = (sh_vec / (width + 1e-6)) * width * hip_ratio / 2.0
         return hip_mid - half, hip_mid + half
 
-    def _get_body_points(self, landmarks, frame_w: int, frame_h: int) -> Optional[dict]:
+    def _get_body_points(self, landmarks, frame_w: int, frame_h: int) -> dict | None:
         """
         Extract key upper-body landmarks.
         [FIX H1] Sorts L/R shoulders and hips by x-coordinate.
@@ -212,7 +252,7 @@ class TryOnEngine:
         """
         lm = landmarks.landmark
 
-        def pt(idx: int) -> Tuple[np.ndarray, float]:
+        def pt(idx: int) -> tuple[np.ndarray, float]:
             l = lm[idx]
             return np.array([l.x * frame_w, l.y * frame_h], dtype=np.float32), float(l.visibility)
 
@@ -274,7 +314,7 @@ class TryOnEngine:
         pts: dict,
         frame_h: int,
         frame_w: int,
-    ) -> Optional[np.ndarray]:
+    ) -> np.ndarray | None:
         """
         Warp garment image onto detected body region.
         [FIX H3] Uses cv2.getPerspectiveTransform (exact 4-point solver).
@@ -392,8 +432,21 @@ class TryOnEngine:
                 pts["ls"], pts["rs"] = smoothed[0], smoothed[1]
                 pts["lh"], pts["rh"] = smoothed[2], smoothed[3]
 
+                # [PATCH P4] Adaptive fit: widen slightly to hide underlying real clothing
+                pts = widen_for_real_clothes(pts, cat_mask)
+
                 t_warp = time.perf_counter()
-                warped = self._warp_garment(garment, garment_id, pts, h, w)
+                gh, gw = garment.shape[:2]
+                tps = (
+                    compute_tps_anchors(pts, self.garment_anchors8.get(garment_id), gw, gh)
+                    if compute_tps_anchors is not None
+                    else None
+                )
+                if tps is not None and tps_warp is not None:
+                    src_pts, dst_pts = tps
+                    warped = tps_warp(garment, src_pts, dst_pts, w, h)
+                else:
+                    warped = self._warp_garment(garment, garment_id, pts, h, w)
                 t_blend = time.perf_counter()
 
                 if warped is not None and cat_mask is not None and relight_and_soften is not None:

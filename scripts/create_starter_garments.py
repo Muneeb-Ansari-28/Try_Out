@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+
+from PIL import Image, ImageDraw
 
 
 def create_starter_garments(out_dir: str | Path = "garments/processed") -> None:
